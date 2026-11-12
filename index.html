@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Name That Hypothesis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: a practice loop. One generated scenario card, two questions side by side (null, alternative), a score strip, and a reveal that explains which clue words gave each answer away. Same visual language as "Reject or Not". */
+:root{
+  --bg:#f1f4f8; --surface:#ffffff; --surface2:#e8eef5; --ink:#12202e; --ink2:#4a5a6a; --line:#d2dbe4;
+  --btn:#163a5f; --btnink:#ffffff;
+  --accent:#d8432c; --samp:#c98800; --ok:#17875a; --bad:#c43a2a; --pop:#8499b0;
+  --focus:#1a6bff;color-scheme:light;
+  --display:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1721; --surface:#15212d; --surface2:#1c2b3a; --ink:#e8eef5; --ink2:#9db0c2; --line:#2a3b4c;
+  --btn:#a5ccf7; --btnink:#0b1927; --accent:#ff7b62; --samp:#ffc13d; --ok:#4cc38a; --bad:#ff8a72; --pop:#6f879f;
+  --focus:#7db3ff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1721; --surface:#15212d; --surface2:#1c2b3a; --ink:#e8eef5; --ink2:#9db0c2; --line:#2a3b4c;
+  --btn:#a5ccf7; --btnink:#0b1927; --accent:#ff7b62; --samp:#ffc13d; --ok:#4cc38a; --bad:#ff8a72; --pop:#6f879f;
+  --focus:#7db3ff; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+.wrap{max-width:980px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0;text-wrap:balance}
+p{margin:0}
+b{font-weight:600}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+
+.top{padding:34px 0 14px}
+.kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+h1{font-size:clamp(34px,6vw,52px);margin:6px 0 10px;letter-spacing:-.01em}
+.lede{max-width:62ch;color:var(--ink2);font-size:17px}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);padding:10px 0;margin-bottom:14px;border-bottom:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between}
+.group{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.group>small{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink2)}
+.pick{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-size:14px;font-weight:500}
+.pick[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.score{display:flex;gap:8px;flex-wrap:wrap}
+.stat{display:flex;gap:7px;align-items:baseline;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:14px}
+.stat small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--ink2)}
+.stat b{font-variant-numeric:tabular-nums}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+.card-h{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.tag{font:700 12px var(--display);letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--bg);border-radius:6px;padding:3px 9px}
+.tag.alt{background:var(--surface2);color:var(--ink)}
+.num{color:var(--ink2);font-size:14px;margin-left:auto}
+.story{background:var(--surface2);border-radius:10px;padding:16px 18px;font-size:18px;max-width:72ch;display:grid;gap:6px}
+.story mark{background:none;color:inherit;border-radius:3px;transition:background .2s}
+.story.hint mark{background:color-mix(in srgb,var(--samp) 38%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--samp) 38%,transparent)}
+.linkbtn{background:none;border:0;padding:0;color:var(--ink2);text-decoration:underline;cursor:pointer;font-size:14px;margin-top:10px}
+.key{font-size:14px;color:var(--ink2);margin-top:10px;max-width:72ch}
+.key b{color:var(--ink)}
+
+.qs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.q.solved{border-color:var(--ok)}
+.q h3{font-size:19px;margin-bottom:2px}
+.q .why{color:var(--ink2);font-size:14px;margin-bottom:10px}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:12px;align-items:center;justify-content:space-between;text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:10px 13px;cursor:pointer;min-width:0}
+.opt:hover:not(:disabled){border-color:var(--ink2)}
+.opt .w{min-width:0;font-size:15px}
+.opt .sym{flex:none;font:600 15px var(--body);background:var(--surface2);border-radius:6px;padding:3px 9px;white-space:nowrap}
+.symonly .opt .w{display:none}
+.symonly .opt{justify-content:center}
+.symonly .opt .sym{font-size:20px;background:none;padding:6px}
+.opt.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,var(--surface))}
+.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--surface));opacity:.75}
+.opt:disabled:not(.good):not(.bad){opacity:.5;cursor:default}
+.fb{margin-top:10px;padding:10px 14px;border-radius:10px;font-size:15px;background:var(--surface2)}
+.fb.good{background:color-mix(in srgb,var(--ok) 14%,var(--surface))}
+.fb.bad{background:color-mix(in srgb,var(--bad) 11%,var(--surface))}
+
+.reveal{margin-top:16px;border:1.5px solid var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--surface));border-radius:14px;padding:18px 20px}
+.reveal h3{font-size:20px;margin-bottom:8px}
+.reveal ul{margin:0 0 6px;padding-left:20px;display:grid;gap:5px;max-width:74ch}
+.reveal mark{background:color-mix(in srgb,var(--samp) 38%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+.pair{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 12px}
+.pair div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font:600 20px var(--display)}
+.pair small{display:block;font:600 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.numline{background:var(--surface);border-radius:10px;padding:8px 10px;margin-top:6px}
+.numline svg{display:block;width:100%;height:auto}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center}
+.btn{background:var(--btn);color:var(--btnink);border:0;border-radius:10px;padding:12px 22px;font-weight:600;cursor:pointer;font-size:16px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--ink2)}
+@media (max-width:760px){.qs{grid-template-columns:1fr}.card{padding:16px}.num{margin-left:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <p class="kicker">Statistics · Hypothesis testing</p>
+  <h1>Name That Hypothesis</h1>
+  <p class="lede">Read the scenario. Pick the null hypothesis and the alternative hypothesis. Every scenario is generated fresh, so you can keep practicing as long as you like.</p>
+</header>
+
+<div class="bar">
+  <div class="group" role="group" aria-label="Scenario type">
+    <small>Practice with</small>
+    <button class="pick" type="button" data-t="both" aria-pressed="true">Both</button>
+    <button class="pick" type="button" data-t="mean" aria-pressed="false">Averages</button>
+    <button class="pick" type="button" data-t="prop" aria-pressed="false">Proportions</button>
+    <button class="pick" type="button" id="symBtn" aria-pressed="false" title="Hide the words and show only the symbols">Symbols only</button>
+  </div>
+  <div class="score" aria-live="polite">
+    <div class="stat"><small>Solved</small><b id="sSolved">0</b></div>
+    <div class="stat"><small>First try</small><b id="sFirst">0</b></div>
+    <div class="stat"><small>Streak</small><b id="sStreak">0</b></div>
+  </div>
+</div>
+
+<section class="card" id="scn">
+  <div class="card-h"><span class="tag" id="typeTag"></span><span class="num" id="num"></span></div>
+  <div class="story" id="story"></div>
+  <button class="linkbtn" id="hintBtn" type="button">Highlight the clue words</button>
+  <p class="key" id="key"></p>
+</section>
+
+<div class="qs" id="qs">
+  <div class="q" id="q0">
+    <h3>Null hypothesis (H<sub>0</sub>)</h3>
+    <p class="why">The "nothing special is happening" claim.</p>
+    <div class="opts" id="o0"></div>
+    <div class="fb" id="f0" hidden></div>
+  </div>
+  <div class="q" id="q1">
+    <h3>Alternative hypothesis (H<sub>a</sub>)</h3>
+    <p class="why">What the person testing suspects.</p>
+    <div class="opts" id="o1"></div>
+    <div class="fb" id="f1" hidden></div>
+  </div>
+</div>
+
+<div class="reveal" id="reveal" hidden></div>
+<div class="actions"><button class="btn" id="next" type="button">Skip to a new scenario</button></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s);
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const art=w=>/^[aeiou]/i.test(w)?'an':'a';
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const num=(v,d)=>Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+/* ---------- situations about an average (parameter: mu) ---------- */
+const MEANS=[
+ {id:'loaf',role:'food inspector',noun:'the average weight of a loaf of bread',unit:'oz',lo:12,hi:20,step:1,dec:0,n:[20,60],items:'loaves',claim:V=>`A bakery says its loaves weigh <b>${V}</b> on average.`},
+ {id:'cereal',role:'consumer advocate',noun:'the average amount of cereal in a box',unit:'oz',lo:10,hi:18,step:0.5,dec:1,n:[25,60],items:'boxes',claim:V=>`A cereal company prints <b>${V}</b> as the average net weight on its boxes.`},
+ {id:'train',role:'commuter',noun:'the average length of the train ride downtown',unit:'minutes',lo:25,hi:55,step:5,dec:0,n:[30,80],items:'rides',claim:V=>`The rail schedule says the ride takes <b>${V}</b> on average.`},
+ {id:'ebike',role:'bike reviewer',noun:'the average range of the e-bike on one charge',unit:'miles',lo:20,hi:60,step:5,dec:0,n:[15,40],items:'e-bikes',claim:V=>`A manufacturer advertises that its e-bike travels <b>${V}</b> per charge on average.`},
+ {id:'bulb',role:'lab technician',noun:'the average lifetime of the bulbs',unit:'hours',lo:800,hi:1500,step:100,dec:0,n:[30,80],items:'bulbs',claim:V=>`A lightbulb maker claims its bulbs last <b>${V}</b> on average.`},
+ {id:'hold',role:'customer advocate',noun:'the average hold time on the help line',unit:'minutes',lo:4,hi:12,step:1,dec:0,n:[40,100],items:'calls',claim:V=>`A cable company says callers wait <b>${V}</b> on average before reaching an agent.`},
+ {id:'plant',role:'botanist',noun:'the average height of the plants after 30 days',unit:'cm',lo:15,hi:35,step:1,dec:0,n:[20,50],items:'plants',claim:V=>`A seed packet says the plants grow to <b>${V}</b> in 30 days on average.`},
+ {id:'books',role:'librarian',noun:'the average number of books a student checks out each month',unit:'books',lo:3,hi:9,step:1,dec:0,n:[40,90],items:'students',claim:V=>`Last year the library reported that students checked out <b>${V}</b> per month on average.`},
+ {id:'gpa',role:'dean',noun:'the average GPA of first-year students',unit:'',lo:2.6,hi:3.4,step:0.1,dec:1,n:[40,100],items:'first-year students',claim:V=>`The college reports that first-year students have an average GPA of <b>${V}</b>.`},
+ {id:'steps',role:'researcher',noun:'the average number of steps a user walks per day',unit:'steps',lo:5000,hi:9000,step:500,dec:0,n:[40,120],items:'users',claim:V=>`A fitness app says its users walk <b>${V}</b> a day on average.`},
+ {id:'lunch',role:'student council member',noun:'the average wait in the lunch line',unit:'minutes',lo:4,hi:10,step:1,dec:0,n:[30,80],items:'students',claim:V=>`The cafeteria manager says students wait <b>${V}</b> on average in the lunch line.`},
+ {id:'tire',role:'tire tester',noun:'the average tread life of the tires',unit:'thousand miles',lo:40,hi:70,step:5,dec:0,n:[20,50],items:'tires',claim:V=>`A tire company claims its tires last <b>${V}</b> on average.`},
+ {id:'sprint',role:'coach',noun:'the average 100-meter time of the team',unit:'seconds',lo:11,hi:14,step:0.5,dec:1,n:[15,40],items:'sprints',claim:V=>`Last season the track team's average 100-meter time was <b>${V}</b>.`},
+ {id:'bottle',role:'quality inspector',noun:'the average amount of water in a bottle',unit:'mL',lo:500,hi:750,step:50,dec:0,n:[30,80],items:'bottles',claim:V=>`A water company says its bottles hold <b>${V}</b> on average.`},
+ {id:'mpg',role:'magazine tester',noun:'the average fuel economy of the car model',unit:'mpg',lo:22,hi:40,step:2,dec:0,n:[15,40],items:'cars',claim:V=>`A car company advertises <b>${V}</b> on average for its new model.`},
+ {id:'wifi',role:'customer',noun:'the average download speed of the internet plan',unit:'Mbps',lo:50,hi:200,step:25,dec:0,n:[30,80],items:'speed tests',claim:V=>`An internet provider promises average download speeds of <b>${V}</b>.`},
+ {id:'coffee',role:'health inspector',noun:'the average temperature of the coffee served',unit:'°F',lo:150,hi:190,step:5,dec:0,n:[25,60],items:'cups',claim:V=>`A coffee shop says it serves coffee at <b>${V}</b> on average.`},
+ {id:'muffin',role:'nutrition student',noun:'the average number of calories in a muffin',unit:'calories',lo:300,hi:500,step:25,dec:0,n:[20,50],items:'muffins',claim:V=>`A café lists its muffins at <b>${V}</b> on average.`},
+ {id:'texts',role:'researcher',noun:'the average number of texts a teen sends per day',unit:'texts',lo:40,hi:120,step:10,dec:0,n:[50,150],items:'teens',claim:V=>`A survey from last year found that teens send <b>${V}</b> a day on average.`},
+ {id:'jump',role:'trainer',noun:'the average vertical jump of the trainees',unit:'inches',lo:16,hi:28,step:2,dec:0,n:[20,50],items:'athletes',claim:V=>`A gym says its trainees' vertical jump averages <b>${V}</b>.`}
+];
+/* ---------- situations about a proportion (parameter: p) ---------- */
+const PROPS=[
+ {id:'ft',role:'coach',grp:'free throws',rel:'that',act:'go in',lo:40,hi:85,n:[60,150],claim:V=>`A team's stat sheet says <b>${V}</b> of its free throws go in.`},
+ {id:'belt',role:'traffic researcher',grp:'drivers',rel:'who',act:'wear a seatbelt',lo:60,hi:95,n:[80,200],claim:V=>`A state report says <b>${V}</b> of drivers wear a seatbelt.`},
+ {id:'online',role:'marketing analyst',grp:'customers',rel:'who',act:'order online',n:[80,200],claim:V=>`A pizza chain says <b>${V}</b> of its customers order online.`},
+ {id:'seed',role:'gardener',grp:'seeds',rel:'that',act:'germinate',lo:60,hi:95,n:[60,150],claim:V=>`A seed company claims that <b>${V}</b> of its seeds germinate.`},
+ {id:'defect',role:'quality inspector',grp:'parts',rel:'that',act:'are defective',lo:2,hi:10,step:1,n:[150,400],claim:V=>`A factory says <b>${V}</b> of its parts are defective.`},
+ {id:'flight',role:'travel reporter',grp:'flights',rel:'that',act:'arrive on time',lo:60,hi:90,n:[80,200],claim:V=>`An airline says <b>${V}</b> of its flights arrive on time.`},
+ {id:'walk',role:'principal',grp:'students',rel:'who',act:'walk to school',lo:15,hi:60,n:[80,200],claim:V=>`A district report says <b>${V}</b> of students walk to school.`},
+ {id:'pet',role:'teacher',grp:'students',rel:'who',act:'own a pet',lo:40,hi:80,n:[60,150],claim:V=>`A national survey says <b>${V}</b> of students own a pet.`},
+ {id:'recycle',role:'environmental researcher',grp:'households',rel:'that',act:'recycle',lo:30,hi:80,n:[80,200],claim:V=>`A city says <b>${V}</b> of its households recycle.`},
+ {id:'speed',role:'traffic engineer',grp:'cars',rel:'that',act:'exceed the speed limit',lo:20,hi:60,n:[100,300],claim:V=>`A police department says <b>${V}</b> of cars on Main Street exceed the speed limit.`},
+ {id:'email',role:'analyst',grp:'emails',rel:'that',act:'get opened',lo:15,hi:45,n:[100,300],claim:V=>`A marketing team says <b>${V}</b> of its emails get opened.`},
+ {id:'lefty',role:'biology student',grp:'people',rel:'who',act:'are left-handed',lo:8,hi:14,step:1,n:[150,400],claim:V=>`A textbook says about <b>${V}</b> of people are left-handed.`},
+ {id:'job',role:'counselor',grp:'seniors',rel:'who',act:'have a part-time job',lo:20,hi:60,n:[60,150],claim:V=>`A guidance office report says <b>${V}</b> of seniors have a part-time job.`},
+ {id:'coin',role:'student',grp:'coin flips',rel:'that',act:'land heads',lo:50,hi:50,step:5,n:[100,300],claim:V=>`A fair coin should land heads <b>${V}</b> of the time.`},
+ {id:'helmet',role:'safety officer',grp:'cyclists',rel:'who',act:'wear a helmet',lo:30,hi:80,n:[80,200],claim:V=>`A city says <b>${V}</b> of cyclists wear a helmet.`},
+ {id:'drive',role:'reviewer',grp:'students',rel:'who',act:'pass the driving test on the first try',lo:50,hi:85,n:[60,150],claim:V=>`A driving school says <b>${V}</b> of its students pass the driving test on the first try.`},
+ {id:'tomato',role:'gardener',grp:'tomato plants',rel:'that',act:'survive transplanting',lo:60,hi:95,n:[60,150],claim:V=>`A nursery says <b>${V}</b> of its tomato plants survive transplanting.`},
+ {id:'menu',role:'student reporter',grp:'students',rel:'who',act:'like the new lunch menu',lo:30,hi:80,n:[60,150],claim:V=>`The cafeteria says <b>${V}</b> of students like the new lunch menu.`},
+ {id:'spam',role:'security analyst',grp:'emails',rel:'that',act:'are spam',lo:30,hi:70,n:[100,300],claim:V=>`An email provider says <b>${V}</b> of incoming messages are spam.`},
+ {id:'bus',role:'rider',grp:'buses',rel:'that',act:'arrive on schedule',lo:60,hi:90,n:[60,150],claim:V=>`A transit agency says <b>${V}</b> of its buses arrive on schedule.`}
+];
+
+/* ---------- wording frames: each returns [html, clueText] ---------- */
+const LOW=['less than','lower than','below'],HIGH=['more than','greater than','higher than','above'];
+function meanSuspect(c,dir,V,who){
+  const N=c.noun,low=pick(LOW),hi=pick(HIGH);
+  const F={
+   left:[()=>[`${who} suspects that ${N} is <mark>${low}</mark> ${V}.`,low],
+         ()=>[`${who} wants to test whether ${N} is actually <mark>${low}</mark> ${V}.`,low],
+         ()=>[`${who} believes the true value is <mark>${low}</mark> the claimed ${V}.`,low],
+         ()=>[`${who} thinks the claim of ${V} is <mark>too high</mark>.`,'too high']],
+   right:[()=>[`${who} suspects that ${N} is <mark>${hi}</mark> ${V}.`,hi],
+         ()=>[`${who} wants to test whether ${N} is actually <mark>${hi}</mark> ${V}.`,hi],
+         ()=>[`${who} believes the true value is <mark>${hi}</mark> the claimed ${V}.`,hi],
+         ()=>[`${who} thinks the claim of ${V} is <mark>too low</mark>.`,'too low']],
+   two:[()=>[`${who} wants to test whether ${N} is <mark>different from</mark> ${V}.`,'different from'],
+         ()=>[`${who} wonders whether ${N} has <mark>changed</mark> from ${V}.`,'changed'],
+         ()=>[`${who} suspects the claim of ${V} is <mark>not accurate</mark>, but is not sure which way it is off.`,'not accurate'],
+         ()=>[`${who} wants to check whether the true value <mark>differs from</mark> ${V}.`,'differs from']]
+  };
+  return pick(F[dir])();
+}
+function propSuspect(c,dir,V,who){
+  const g=c.grp,r=c.rel,a=c.act;
+  const F={
+   left:[()=>[`${who} suspects that <mark>fewer than</mark> ${V} of ${g} ${a}.`,'fewer than'],
+         ()=>[`${who} thinks the true percentage of ${g} ${r} ${a} is <mark>lower than</mark> ${V}.`,'lower than'],
+         ()=>[`${who} believes the claim of ${V} is <mark>too high</mark>.`,'too high'],
+         ()=>[`${who} wants to test whether the true proportion of ${g} ${r} ${a} is <mark>less than</mark> ${V}.`,'less than']],
+   right:[()=>[`${who} suspects that <mark>more than</mark> ${V} of ${g} ${a}.`,'more than'],
+         ()=>[`${who} thinks the true percentage of ${g} ${r} ${a} is <mark>higher than</mark> ${V}.`,'higher than'],
+         ()=>[`${who} believes the claim of ${V} is <mark>too low</mark>.`,'too low'],
+         ()=>[`${who} wants to test whether the true proportion of ${g} ${r} ${a} is <mark>greater than</mark> ${V}.`,'greater than']],
+   two:[()=>[`${who} wants to test whether the true percentage of ${g} ${r} ${a} is <mark>different from</mark> ${V}.`,'different from'],
+         ()=>[`${who} wonders whether the percentage of ${g} ${r} ${a} has <mark>changed</mark> from ${V}.`,'changed'],
+         ()=>[`${who} suspects the claim of ${V} is <mark>not accurate</mark>, but is not sure which way it is off.`,'not accurate'],
+         ()=>[`${who} wants to check whether the true proportion <mark>differs from</mark> ${V}.`,'differs from']]
+  };
+  return pick(F[dir])();
+}
+
+/* ---------- build one scenario ---------- */
+function build(type,ctx,dir){
+  const isMean=type==='mean';
+  const dec=isMean?ctx.dec:0,unit=isMean?ctx.unit:'%';
+  const lo=ctx.lo??(isMean?0:25),hi=ctx.hi??(isMean?0:75),step=ctx.step??(isMean?1:5);
+  const k=rnd(0,Math.max(0,Math.round((hi-lo)/step)));
+  const v=+(lo+k*step).toFixed(dec);
+  const fmt=x=>isMean?num(x,dec)+(unit?' '+unit:''):num(x,0)+'%';
+  const V=fmt(v),n=rnd(ctx.n[0],ctx.n[1]);
+  const side=dir==='left'?-1:dir==='right'?1:(Math.random()<.5?-1:1);
+  const hasSample=Math.random()<0.75;
+  let x,sampleTxt='',xFmt='';
+  if(isMean){
+    x=+(v+side*v*(0.03+Math.random()*0.07)).toFixed(dec);
+    if(x===v)x=+(v+side*Math.pow(10,-dec)).toFixed(dec);
+    xFmt=fmt(x);
+  }else{
+    let pct=v+side*(4+Math.random()*8);pct=Math.max(2,Math.min(98,pct));
+    const cnt=Math.round(pct/100*n);x=Math.round(cnt/n*100);
+    if(x===v)x=v+side*3;
+    xFmt=fmt(x);sampleTxt=`${cnt} (${xFmt})`;ctx._cnt=cnt;
+  }
+  const decoy=isMean?+(v*1.25).toFixed(dec):Math.min(95,v+15);
+  const A=r=>cap(art(r)+' '+r),T=r=>'The '+r;
+  const sampleSent=who=>isMean
+    ?pick([`${who} takes a random sample of ${n} ${ctx.items} and finds a sample average of ${xFmt}.`,`${who} checks a random sample of ${n} ${ctx.items}. The sample average is ${xFmt}.`,`In a random sample of ${n} ${ctx.items}, ${who.toLowerCase()} gets an average of ${xFmt}.`])
+    :`In a random sample of ${n} ${ctx.grp}, ${who.toLowerCase()} finds that ${sampleTxt} of them ${ctx.act}.`;
+  const susp=who=>(isMean?meanSuspect:propSuspect)(ctx,dir,V,who);
+  const claim=ctx.claim(V);
+  let parts,clue,sentA,sentB;
+  const orderSampleFirst=hasSample&&Math.random()<0.3;
+  if(orderSampleFirst){const s1=sampleSent(A(ctx.role)),s2=susp(T(ctx.role));clue=s2[1];parts=[claim,s1,s2[0]]}
+  else{const s2=susp(A(ctx.role));clue=s2[1];parts=[claim,s2[0]];if(hasSample)parts.push(sampleSent(T(ctx.role)))}
+  const noun=isMean?ctx.noun:`the proportion of ${ctx.grp} ${ctx.rel} ${ctx.act}`;
+  return {type,ctx,dir,v,V,x,xFmt,hasSample,decoy,decoyFmt:fmt(decoy),fmt,noun,clue,parts,sym:isMean?'μ':'p',
+    symVal:z=>isMean?num(z,dec):String(+(z/100).toFixed(3))};
+}
+
+/* ---------- deck: cycle through every situation before repeating ---------- */
+let filter='both',deck=[],lastDir=null;
+function refill(){
+  deck=[];
+  if(filter!=='prop')MEANS.forEach(c=>deck.push(['mean',c]));
+  if(filter!=='mean')PROPS.forEach(c=>deck.push(['prop',c]));
+  shuffle(deck);
+}
+function nextScenario(){
+  if(!deck.length)refill();
+  const [t,c]=deck.pop();
+  let dir=pick(['left','right','two']);if(dir===lastDir&&Math.random()<.7)dir=pick(['left','right','two'].filter(d=>d!==lastDir));
+  lastDir=dir;return build(t,c,dir);
+}
+
+/* ---------- state + UI ---------- */
+const S={sc:null,solved:0,first:0,streak:0,count:0,t:[{done:false,tries:0},{done:false,tries:0}],wrongHa:0};
+const OPW={'=':'is','<':'is less than','>':'is greater than','≠':'is different from'};
+const OPN={'=':'equals','<':'less than','>':'greater than','≠':'different from'};
+function stmt(sc,op,val,usePct){return cap(sc.noun)+' '+OPW[op]+' '+(val==null?sc.V:sc.fmt(val))+'.'}
+function symTxt(sc,op,val){return `${sc.sym} ${op} ${sc.symVal(val==null?sc.v:val)}`}
+function choose(boxId,fbId,opts,onResult){
+  const box=$(boxId),fb=$(fbId);box.innerHTML='';fb.hidden=true;let done=false;
+  opts.forEach(o=>{
+    const b=document.createElement('button');b.type='button';b.className='opt';
+    b.innerHTML=`<span class="w">${o.words}</span><span class="sym">${o.sym}</span>`;
+    b.addEventListener('click',()=>{
+      if(done)return;fb.hidden=false;onResult(o,b,true);
+      if(o.ok){done=true;b.classList.add('good');[...box.children].forEach(x=>{if(x!==b)x.disabled=true});fb.className='fb good';fb.innerHTML=o.fb}
+      else{b.classList.add('bad');b.disabled=true;fb.className='fb bad';fb.innerHTML=o.fb}
+    });
+    box.appendChild(b);
+  });
+}
+function opt(sc,op,val,ok,fb){return {words:stmt(sc,op,val),sym:symTxt(sc,op,val),ok,fb,op}}
+function render(){
+  const sc=S.sc=nextScenario();S.count++;S.wrongHa=0;
+  S.t=[{done:false,tries:0},{done:false,tries:0}];
+  $('#typeTag').textContent=sc.type==='mean'?'About an average':'About a proportion';
+  $('#typeTag').className='tag'+(sc.type==='mean'?'':' alt');
+  $('#num').textContent='Scenario '+S.count;
+  $('#story').innerHTML=sc.parts.map(p=>`<span>${p}</span>`).join('');
+  $('#story').classList.remove('hint');
+  $('#key').innerHTML=sc.type==='mean'
+    ?'<b>μ</b> means the <b>true average</b> of everything being studied, not the average of one sample.'
+    :'<b>p</b> means the <b>true proportion</b> of everything being studied, not the proportion in one sample.';
+  $('#reveal').hidden=true;$('#q0').classList.remove('solved');$('#q1').classList.remove('solved');
+  $('#next').textContent='Skip to a new scenario';$('#next').className='btn ghost';
+  const what=sc.type==='mean'?'average':'proportion';
+  const dirOp=sc.dir==='left'?'<':sc.dir==='right'?'>':'≠';
+  /* null options */
+  const ineqOp=sc.dir==='two'?pick(['<','>']):dirOp;
+  const o0=[
+    opt(sc,'=',null,true,`<b>Yes.</b> The null is the claim, written with "equals": ${sc.V}.`),
+    sc.hasSample?opt(sc,'=',sc.x,false,`That is what the <b>sample</b> showed (${sc.xFmt}). A hypothesis is about the true ${what}, not about one sample, so use the claimed value, ${sc.V}.`)
+                :opt(sc,'=',sc.decoy,false,`That number is not in the claim. The null uses the claimed value, ${sc.V}.`),
+    opt(sc,ineqOp,null,false,`The null never uses "${OPN[ineqOp]}". It is the "nothing special" statement, so it uses "equals".`),
+    opt(sc,'≠',null,false,`The null never uses "different from". It is the "nothing special" statement, so it uses "equals".`)
+  ];
+  /* alternative options */
+  const ops=['<','>','≠'];
+  const o1=ops.map(op=>opt(sc,op,null,op===dirOp,op===dirOp
+    ?`<b>Yes.</b> The clue "<b>${sc.clue}</b>" ${sc.dir==='two'?'asks about a difference in either direction':sc.dir==='left'?'points to lower values':'points to higher values'}, so the alternative uses "${OPN[op]}".`
+    :`Not that one. Find the sentence about what is <b>suspected</b>. Its key words tell you which direction to use.`));
+  o1.push(sc.hasSample?opt(sc,dirOp,sc.x,false,`The direction is right, but the number is the <b>sample</b> result (${sc.xFmt}). The alternative compares the true ${what} to the <b>claimed</b> value, ${sc.V}.`)
+                      :opt(sc,'=',null,false,`That is the null again. The alternative says something is <b>different</b> from the claim.`));
+  choose('#o0','#f0',shuffle(o0),(o,b)=>{S.t[0].tries++;if(o.ok){S.t[0].done=true;$('#q0').classList.add('solved');check()}});
+  choose('#o1','#f1',shuffle(o1),(o,b)=>{S.t[1].tries++;if(!o.ok){S.wrongHa++;if(S.wrongHa>=2)$('#story').classList.add('hint')}if(o.ok){S.t[1].done=true;$('#q1').classList.add('solved');check()}});
+}
+function check(){
+  if(!(S.t[0].done&&S.t[1].done))return;
+  const sc=S.sc,perfect=S.t[0].tries===1&&S.t[1].tries===1;
+  S.solved++;if(perfect){S.first++;S.streak++}else S.streak=0;
+  $('#sSolved').textContent=S.solved;$('#sFirst').textContent=S.first;$('#sStreak').textContent=S.streak;
+  const what=sc.type==='mean'?'average':'proportion';
+  const dirOp=sc.dir==='left'?'<':sc.dir==='right'?'>':'≠';
+  const dirWords=sc.dir==='left'?'one direction: lower':sc.dir==='right'?'one direction: higher':'either direction';
+  $('#reveal').innerHTML=`<h3>${perfect?'Nailed it on the first try.':'Got it.'} Here is how the clues gave it away.</h3>
+    <div class="pair"><div><small>Null</small>${symTxt(sc,'=')}</div><div><small>Alternative</small>${symTxt(sc,dirOp)}</div></div>
+    <ul>
+     <li><b>The claim is ${sc.V}.</b> The null uses the claimed value with "equals".</li>
+     <li><b>The clue word is <mark>${sc.clue}</mark>.</b> It points to ${dirWords}, so the alternative uses "${OPN[dirOp]}".</li>
+     ${sc.hasSample?`<li><b>The sample result (${sc.xFmt}) is data, not a hypothesis.</b> Hypotheses are about the true ${what}.</li>`:''}
+    </ul>
+    <div class="numline">${numline(sc)}</div>`;
+  $('#reveal').hidden=false;
+  $('#next').textContent='Next scenario';$('#next').className='btn';
+  $('#reveal').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
+}
+function numline(sc){
+  const d=sc.dir;
+  const arrow=(x1,x2,lab,lx,anchor)=>`<line x1="${x1}" y1="62" x2="${x2}" y2="62" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M${x2} 62 l${x2<x1?10:-10} -9 m${x2<x1?-10:10} 9 l${x2<x1?10:-10} 9" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <text x="${lx}" y="100" text-anchor="${anchor}" fill="var(--accent)" font-size="14" font-weight="600">${lab}</text>`;
+  return `<svg viewBox="0 0 600 112" role="img" aria-label="Number line: the null at the claimed value, the alternative pointing ${d==='two'?'both ways':d==='left'?'lower':'higher'}">
+    <line x1="30" y1="62" x2="570" y2="62" stroke="var(--pop)" stroke-width="2"/>
+    <circle cx="300" cy="62" r="10" fill="var(--ink)"/>
+    <line x1="300" y1="36" x2="300" y2="50" stroke="var(--ink)" stroke-width="2"/>
+    <text x="300" y="28" text-anchor="middle" fill="var(--ink)" font-size="15" font-weight="600">Null: ${sc.V.replace(/&/g,'&amp;')}</text>
+    ${d!=='right'?arrow(282,70,'Alternative: lower',70,'start'):''}
+    ${d!=='left'?arrow(318,530,'Alternative: higher',530,'end'):''}
+  </svg>`;
+}
+
+/* ---------- controls ---------- */
+document.querySelectorAll('.pick[data-t]').forEach(b=>b.addEventListener('click',()=>{
+  filter=b.dataset.t;document.querySelectorAll('.pick[data-t]').forEach(x=>x.setAttribute('aria-pressed',x===b));deck=[];render();
+}));
+$('#symBtn').addEventListener('click',()=>{
+  const on=$('#symBtn').getAttribute('aria-pressed')!=='true';$('#symBtn').setAttribute('aria-pressed',on);$('#qs').classList.toggle('symonly',on);
+});
+$('#hintBtn').addEventListener('click',()=>$('#story').classList.toggle('hint'));
+$('#next').addEventListener('click',()=>{
+  if(!(S.t[0].done&&S.t[1].done))S.streak=0,$('#sStreak').textContent=0;
+  render();window.scrollTo({top:0,behavior:'auto'});
+});
+window.__NTH={build,MEANS,PROPS,nextScenario};
+render();
+})();
+</script>
+</body>
+</html>
